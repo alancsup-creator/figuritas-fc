@@ -175,7 +175,7 @@ function render(){
 }
 (async()=>{
   try{
-    if(FIREBASE_CONFIG.apiKey==="AIzaSyByKppVKNL8DulWXUcJWMUbw5EV7-Z16vg"){$("#app").innerHTML="Falta configurar Firebase: pegá tu configuración en <code>FIREBASE_CONFIG</code>.";return}
+    if(FIREBASE_CONFIG.apiKey==="PEGA_AQUI"){$("#app").innerHTML="Falta configurar Firebase: pegá tu configuración en <code>FIREBASE_CONFIG</code>.";return}
     firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();
     const cred=await firebase.auth().signInAnonymously();me=cred.user.uid;lobby();
   }catch(e){$("#app").textContent="No se pudo conectar con Firebase."}
