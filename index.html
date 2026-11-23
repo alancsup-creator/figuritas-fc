@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Figuritas FC</title>
+<style>
+:root{--bg:#f4f1ea;--fg:#1b1b1b;--pan:#fff;--mut:#666;--acc:#0a7d3c;--bd:#d8d3c6;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141816;--fg:#eee;--pan:#222824;--mut:#9aa8a0;--acc:#3ccf7a;--bd:#38413b}}
+:root[data-theme="dark"]{--bg:#141816;--fg:#eee;--pan:#222824;--mut:#9aa8a0;--acc:#3ccf7a;--bd:#38413b}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;padding:12px;background:var(--bg);color:var(--fg);font:16px system-ui,sans-serif}
+h1{font-size:22px;margin:0 0 10px}
+.pan{background:var(--pan);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-bottom:10px}
+input,select,button{font:inherit;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--pan);color:var(--fg);margin:3px 0}
+button{background:var(--acc);color:#fff;border:0;font-weight:600;cursor:pointer}
+button.sec{background:var(--pan);color:var(--fg);border:1px solid var(--bd)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.hand{display:flex;flex-wrap:wrap;gap:6px}
+.card{width:78px;height:120px;border-radius:9px;border:2px solid rgba(0,0,0,.25);display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:6px 2px;box-sizing:border-box;text-align:center;font-size:11px;cursor:pointer;user-select:none}
+.card b{font-size:26px;line-height:1}
+.card.back{background:repeating-linear-gradient(45deg,#0a7d3c,#0a7d3c 8px,#096a33 8px,#096a33 16px);color:#fff;justify-content:center;font-size:13px}
+.card.act{background:#222;color:#fff}
+.card.off{opacity:.45;cursor:default}
+.me{outline:3px solid var(--acc)}
+.mut{color:var(--mut);font-size:14px}
+.win{background:var(--acc);color:#fff;text-align:center;font-size:20px;font-weight:700}
+.banner{font-weight:600}.banner.go{background:var(--acc);color:#fff}
+.hint{outline:3px solid #ffd400;animation:pl .8s infinite alternate}@keyframes pl{to{transform:translateY(-4px)}}
+.pitch{position:relative;aspect-ratio:100/130;max-width:360px;margin:8px auto;border-radius:10px;border:3px solid #fff;background:repeating-linear-gradient(#2f8f3f 0 12%,#37a048 12% 24%);display:flex;flex-direction:column;justify-content:space-around;padding:6px 0;box-sizing:border-box}
+.ln{position:absolute;inset:0;width:100%;height:100%}
+.rw{position:relative;display:flex;justify-content:space-around}
+.sl{width:25%;text-align:center;font-size:10px;line-height:1.1;color:#fff;text-shadow:0 1px 2px #000}
+.sl i{display:flex;width:36px;height:36px;margin:0 auto 2px;border-radius:50%;align-items:center;justify-content:center;font-style:normal;font-weight:700;border:2px solid #fff;box-sizing:border-box}
+.sl i.emp{background:rgba(0,0,0,.25);border-style:dashed;color:#fff}
+.sl:not(.own) span{opacity:.65}.sl.own{cursor:pointer}
+.chip{background:var(--pan);color:var(--fg);border:1px solid var(--bd);padding:6px 8px;font-size:13px;display:inline-flex;gap:4px;align-items:center}.chip.on{outline:2px solid var(--acc)}
+.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin:6px 0}.bar>div{height:100%;background:var(--acc)}
+details{margin-bottom:10px}summary{cursor:pointer;font-weight:600}
+.pop{animation:popk .9s 2}@keyframes popk{50%{transform:scale(1.4);filter:drop-shadow(0 0 8px #ffd400)}}
+.locked{opacity:.55;cursor:not-allowed;position:relative}.locked:after{content:"🔒";position:absolute;right:3px;top:3px;font-size:16px}
+</style></head><body>
+<h1>⚽ Figuritas FC</h1>
+<div id="app" class="pan">Conectando…</div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+// 1) PEGÁ ACÁ la configuración de tu proyecto de Firebase (ver instrucciones)
+const FIREBASE_CONFIG={apiKey:"AIzaSyByKppVKNL8DulWXUcJWMUbw5EV7-Z16vg",authDomain:"playing-cards-4d504.firebaseapp.com",projectId:"playing-cards-4d504",appId:"1:224283854954:web:a070a69401aa0f59ed6213"};
+// 2) Editá nombres y colores acá y colores acá: [equipo, color de fondo, color de texto]
+const TEAMS=[["Boca","#0b3d91","#f5c400","BOC",["Montero:ARQ","Lozano:DEF","Di Lollo:DEF","Herrera:DEF","Blanco:DEF","Ascacíbar:MED","Paredes:MED","Delgado:MED","Villa:DEL","Merentiel:DEL","Aranda:DEL"]],["River","#ffffff","#d3122a","RIV",["S. Beltrán:ARQ","G. González:DEF","Otamendi:DEF","Rivero:DEF","Acuña:DEF","Andrada:MED","Espíndola:MED","Galván:MED","Almada:MED","Correa:DEL","L. Beltrán:DEL"]],["Independiente","#d3122a","#ffffff","IND",["Mele:ARQ","Arias:DEF","Valdez:DEF","Arrayago:DEF","Banegas:DEF","M. Pérez:MED","Marcone:MED","Machuca:MED","Meza:MED","Palais:DEL","Ávila:DEL"]],["Racing","#7fc4ee","#0b2a52","RAC",["Cambeses:ARQ","Cannavo:DEF","Martínez:DEF","Rojo:DEF","I. Rodríguez:DEF","Lodico:MED","Ortegoza:MED","L. Pérez:MED","Miljevic:MED","Conechny:DEL","E. Torres:DEL"]],["San Lorenzo","#1c2b6b","#d3122a","SLO",["Devecchi:ARQ","E. Herrera:DEF","Arboleda:DEF","Amor:DEF","Rodríguez Pagano:DEF","J. Álvarez:MED","Perruzzi:MED","Tripichio:MED","Reali:MED","Cuello:DEL","Auzmendi:DEL"]],["Estudiantes","#c8102e","#ffffff","EDLP",["Muslera:ARQ","Mancuso:DEF","Núñez:DEF","M. Rojo:DEF","Benedetti:DEF","Piovi:MED","Castro:MED","T. Palacios:MED","Correa:MED","Burgos:DEL","Carrillo:DEL"]]];
+const crest=T=>`<svg viewBox="0 0 24 28" width="24" height="28"><path d="M2 2h20v13c0 6-5 9-10 11C7 24 2 21 2 15z" fill="${T[1]}" stroke="${T[2]}" stroke-width="2"/><text x="12" y="16" text-anchor="middle" font-size="6" font-weight="700" fill="${T[2]}">${T[3]}</text></svg>`;
+const POSN={ARQ:"Arquero",DEF:"Defensor",MED:"Volante",DEL:"Delantero"};
+const ACT={off:["🚩","Offside","El siguiente jugador pierde su turno"],ama:["🟨","Amarilla","Cambiás una carta al azar con un rival"],roja:["🟥","Roja","Un rival pierde 2 turnos"],var:["🖥️","VAR","Mirás la mano de un rival"],pen:["⚽","Penal","Jugás otro turno"],les:["🤕","Lesión","Un rival cambia 2 cartas al azar por el mazo"]};
+const $=s=>document.querySelector(s),clone=o=>JSON.parse(JSON.stringify(o));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let db,ref,me,S=null,pend=null,peek=null,view=null,animKey=-1,lesSeen=-1,busy=false,sub=null,saved={code:"sala1",name:""};
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function mkDeck(){const d=[];TEAMS.forEach((_,t)=>{for(let n=1;n<=11;n++)d.push("T:"+t+":"+n)});[["off",3],["ama",4],["roja",2],["var",3],["pen",2],["les",3]].forEach(([k,c])=>{for(let i=1;i<=c;i++)d.push("A:"+k+":"+i)});return shuffle(d)}
+function start(g){g.deck=mkDeck();g.hands={};g.skips={};g.players.forEach(p=>{g.hands[p.id]=g.deck.splice(0,11);g.skips[p.id]=0});g.disc=[g.deck.pop()];g.started=true;g.les=null;g.drawn=null;g.turn=0;g.phase="draw";g.win=null;g.log=["¡Empieza el partido!"]}
+const nm=(g,id)=>(g.players.find(p=>p.id===id)||{}).name||"?";
+const lg=(g,t)=>{g.log.push(t);g.log=g.log.slice(-6)};
+const isWin=h=>h.length===11&&h.every(c=>c[0]==="T")&&new Set(h.map(c=>c.split(":")[1])).size===1;
+
+async function join(){
+  const code=($("#code").value.trim().toLowerCase()||"sala1").replace(/[^a-z0-9-]/g,"");
+  const name=$("#name").value.trim()||"Jugador";saved={code,name};
+  ref=db.collection("games").doc(code);
+  try{
+    const s=await ref.get();let g=s.exists?clone(s.data()):{n:+$("#n").value,players:[],started:false,turn:0,phase:"draw",skips:{},hands:{},deck:[],disc:[],log:[],win:null};
+    if(!g.players.find(p=>p.id===me)){
+      if(g.started||g.players.length>=g.n){$("#err").textContent="La sala está llena o ya empezó. Probá con otro código.";return}
+      g.players.push({id:me,name});
+    }
+    if(!g.started&&g.players.length===g.n)start(g);
+    await ref.set(g);
+    if(sub)sub();
+    sub=ref.onSnapshot(s=>{S=s.exists?s.data():null;render()},e=>{$("#app").textContent="Error de conexión. Recargá la página."});
+  }catch(e){$("#err").textContent="No se pudo entrar. Revisá la configuración y las reglas de Firebase."}
+}
+async function act(fn){const g=clone(S);if(g.win||g.players[g.turn].id!==me)return;fn(g);try{await ref.set(g)}catch(e){}}
+function draw(fromDisc){act(g=>{if(g.phase!=="draw")return;let c;
+  if(fromDisc){const tp=g.disc[g.disc.length-1];if(!tp||tp[0]==="A")return;c=g.disc.pop()}else{if(!g.deck.length){const top=g.disc.pop();g.deck=shuffle(g.disc);g.disc=[top]}c=g.deck.pop()}
+  if(!c)return;g.hands[me].push(c);g.drawn=c;g.drawnBy=me;g.src=fromDisc?"d":"m";g.dn=Date.now();g.phase="discard";lg(g,nm(g,me)+" robó del "+(fromDisc?"descarte":"mazo"))})}
+function doDiscard(c,target){pend=null;if(c.startsWith("A:var")&&target)peek=target;act(g=>{if(g.phase!=="discard")return;const h=g.hands[me];g.drawn=null;h.splice(h.indexOf(c),1);g.disc.push(c);
+  const k=c[0]==="A"?c.split(":")[1]:null;
+  if(k==="off"){g.skips[g.players[(g.turn+1)%g.n].id]++;lg(g,"🚩 Offside de "+nm(g,me))}
+  if(k==="roja"&&target){g.skips[target]+=2;lg(g,"🟥 "+nm(g,target)+" pierde 2 turnos")}
+  if(k==="ama"&&target){const t=g.hands[target],i=Math.floor(Math.random()*h.length),j=Math.floor(Math.random()*t.length);[h[i],t[j]]=[t[j],h[i]];lg(g,"🟨 "+nm(g,me)+" cambió una carta con "+nm(g,target));if(isWin(t)){g.win=target;return}}
+  if(k==="les"&&target){const t=g.hands[target],out=[],inn=[];for(let z=0;z<2;z++){const o=t.splice(Math.floor(Math.random()*t.length),1)[0];g.deck.unshift(o);const nw=g.deck.pop();t.push(nw);out.push(o);inn.push(nw)}g.les={by:me,tg:target,out,inn,n:Date.now()};lg(g,"🤕 Lesión en "+nm(g,target)+": cambia 2 cartas al azar");if(isWin(t)){g.win=target;return}}
+  if(k==="var"&&target)lg(g,"🖥️ VAR: "+nm(g,me)+" revisa la mano de "+nm(g,target));
+  if(k==="pen")lg(g,"⚽ Penal de "+nm(g,me));
+  if(!k)lg(g,nm(g,me)+" descartó");
+  if(isWin(h)){g.win=me;lg(g,"🏆 Ganó "+nm(g,me));return}
+  if(k==="pen"){g.phase="draw";lg(g,nm(g,me)+" juega de nuevo");return}
+  let nx=(g.turn+1)%g.n;while(g.skips[g.players[nx].id]>0){g.skips[g.players[nx].id]--;lg(g,nm(g,g.players[nx].id)+" pierde el turno");nx=(nx+1)%g.n}
+  g.turn=nx;g.phase="draw"})}
+function pick(c){
+  const k=c[0]==="A"?c.split(":")[1]:null;
+  if(["ama","roja","var","les"].includes(k)){const r=S.players.filter(p=>p.id!==me);if(r.length===1)return discard(c,r[0].id);pend=c;return render()}
+  discard(c)}
+function cardHtml(c,i,clickable){
+  if(c[0]==="T"){const[,t,n]=c.split(":"),T=TEAMS[+t];return `<div class="card" style="background:${T[1]};color:${T[2]}" data-i="${i}"><small>${T[0]}</small>${crest(T)}<b style="font-size:12px;line-height:1.1">${T[4][n-1].split(":")[0]}</b><small>${POSN[T[4][n-1].split(":")[1]]}</small></div>`}
+  const a=ACT[c.split(":")[1]];return `<div class="card act" data-i="${i}"><b>${a[0]}</b><small>${a[1]}</small><small style="font-size:8px;opacity:.85">${a[2]}</small></div>`}
+function pitch(h,t){
+  const T=TEAMS[t],rows={DEL:[],MED:[],DEF:[],ARQ:[]};
+  T[4].forEach((p,i)=>{const[n,pos]=p.split(":"),c="T:"+t+":"+(i+1);rows[pos].push({n,i:i+1,c,own:h.includes(c)})});
+  const sl=o=>o.own?`<div class="sl own" data-c="${o.c}"><i style="background:${T[1]};color:${T[2]}">${o.i}</i>${o.n}</div>`:`<div class="sl"><i class="emp">?</i><span>${o.n}</span></div>`;
+  return `<div class="pitch"><svg class="ln" viewBox="0 0 100 130"><g fill="none" stroke="#fff" stroke-opacity=".7" stroke-width=".8"><line x1="0" y1="65" x2="100" y2="65"/><circle cx="50" cy="65" r="10"/><rect x="25" y="0" width="50" height="18"/><rect x="25" y="112" width="50" height="18"/></g></svg>`+["DEL","MED","DEF","ARQ"].map(k=>`<div class="rw">${rows[k].map(sl).join("")}</div>`).join("")+`</div>`}
+const cname=c=>{if(c[0]!=="T")return ACT[c.split(":")[1]][1];const[,t,n]=c.split(":");return TEAMS[+t][4][n-1].split(":")[0]+" ("+TEAMS[+t][0]+")"};
+const P=(r,k,m)=>({cx:r.left+r.width/2,cy:r.top+r.height/2,s:r.width/78*(m||1),k});
+function flight(c,pts,ms,cb){
+  const e=document.createElement("div");e.style.cssText="position:fixed;left:0;top:0;z-index:50;pointer-events:none;transform-origin:0 0";
+  e.innerHTML=cardHtml(c,-1);document.body.appendChild(e);
+  const an=e.animate(pts.map(p=>({transform:`translate(${p.cx-39*p.s}px,${p.cy-60*p.s}px) scale(${p.s})`,offset:p.k})),{duration:ms,easing:"ease-in-out",fill:"forwards"});
+  an.onfinish=an.oncancel=()=>{e.remove();if(cb)cb()};
+}
+function flyCard(c,src){
+  const tg=document.querySelector('.sl[data-c="'+c+'"]')||document.querySelector('#hand .card[data-i="'+c+'"]'),from=$(src==="d"?"#disc":"#deck");
+  if(!tg||!from)return;
+  let b=tg.getBoundingClientRect();if(b.top<0||b.bottom>innerHeight)tg.scrollIntoView({block:"center"});
+  const a=from.getBoundingClientRect(),d=(tg.querySelector("i")||tg).getBoundingClientRect(),W=innerWidth,H=innerHeight;
+  tg.style.visibility="hidden";busy=true;
+  flight(c,[P(a,0),{cx:W/2,cy:H/2,s:2,k:.3},{cx:W/2,cy:H/2,s:2,k:.65},P(d,1)],2400,()=>{busy=false;tg.style.visibility="";tg.classList.add("pop")});
+}
+function discard(c,t){
+  if(busy)return;
+  const src=document.querySelector('.sl[data-c="'+c+'"]')||document.querySelector('#hand .card[data-i="'+c+'"]'),dst=$("#disc");
+  if(!src||!dst)return doDiscard(c,t);
+  busy=true;src.style.visibility="hidden";
+  const s=(src.querySelector("i")||src).getBoundingClientRect(),d=dst.getBoundingClientRect(),up={left:s.left,top:s.top-30,width:s.width,height:s.height};
+  flight(c,[P(s,0),P(up,.25,1.5),P(d,1)],900,()=>{busy=false;doDiscard(c,t)});
+}
+function lobby(){
+  $("#app").innerHTML=`<p>Ingresá un código de sala y compartilo con tus rivales. El primero que entra elige 2 o 4 jugadores.</p>
+  <div class="row"><input id="name" placeholder="Tu nombre" maxlength="14" value="${esc(saved.name)}"><input id="code" placeholder="Código de sala" maxlength="20" value="${esc(saved.code)}"><select id="n"><option value="2">2 jugadores</option><option value="4">4 jugadores</option></select></div>
+  <button id="go">Entrar a la sala</button><p id="err" class="mut"></p>
+  <p class="mut"><b>Reglas:</b> cada uno empieza con 11 cartas. En tu turno robás una (mazo o descarte) y descartás otra. Gana quien junte las 11 cartas del mismo equipo. 🚩 Offside: el siguiente pierde el turno. 🟨 Amarilla: cambiás una carta al azar con un rival. 🟥 Roja: un rival pierde 2 turnos. 🖥️ VAR: ves la mano de un rival. ⚽ Penal: jugás otro turno. 🤕 Lesión: un rival cambia 2 cartas al azar por el mazo. Las cartas de acción ya usadas quedan bloqueadas: no se pueden recoger del descarte. Las acciones se activan al descartarlas.</p>`;
+  $("#go").onclick=join}
+function render(){
+  const g=S;if(!g)return lobby();
+  if(g.les&&lesSeen!==g.les.n&&(typeof begin==="function"||g.les.by===me||g.les.tg===me)){
+    const L=g.les;
+    $("#app").innerHTML=`<div class="pan banner go">🤕 Lesión en ${esc(nm(g,L.tg))}: cambian 2 cartas</div><div class="mut">Salen (lesionados):</div><div class="hand" id="lo">${L.out.map(c=>cardHtml(c,-1)).join("")}</div><div class="mut">Entran (suplentes del mazo):</div><div class="hand" id="li">${L.inn.map(c=>cardHtml(c,-1)).join("")}</div><button id="lok">Seguir</button>`;
+    document.querySelectorAll("#lo .card").forEach((e,i)=>e.animate([{transform:"none",opacity:1},{transform:"translateY(50px) rotate(10deg)",opacity:.3}],{duration:900,delay:400+i*300,fill:"forwards"}));
+    document.querySelectorAll("#li .card").forEach((e,i)=>e.animate([{transform:"translateY(-80px) scale(.5)",opacity:0},{transform:"none",opacity:1}],{duration:800,delay:1500+i*400,fill:"both"}));
+    $("#lok").onclick=()=>{lesSeen=L.n;render()};return}
+  if(!g.started){$("#app").innerHTML=`<p>Sala <b>${esc(saved.code)}</b> esperando jugadores: ${g.players.length}/${g.n}</p><p class="mut">${g.players.map(p=>esc(p.name)).join(", ")}</p>`;return}
+  const my=g.players[g.turn].id===me,h=(g.hands[me]||[]).map((c,i)=>c).sort();if(!my)peek=null;
+  const cnt={};h.forEach(c=>{if(c[0]==="T"){const t=c.split(":")[1];cnt[t]=(cnt[t]||0)+1}});
+  const best=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0];
+  let html="";
+  if(g.win)html+=`<div class="pan win">🏆 ¡Ganó ${esc(nm(g,g.win))}!</div><button id="again">Revancha</button>`;
+  const topA=g.disc.length&&g.disc[g.disc.length-1][0]==="A",hint=my&&g.phase==="draw"&&!g.win?"hint":"",last=g.log[g.log.length-1]||"";
+  const msg=g.win?"🏁 Fin del partido":my?(g.phase==="draw"?(topA?"① Robá una carta del <b>MAZO</b>. El descarte está bloqueado 🔒: las cartas de acción usadas no se pueden recoger":"① Robá una carta: tocá el <b>MAZO</b> o la última carta del <b>DESCARTE</b>"):(g.drawn&&g.drawnBy===me?"② Sacaste <b>"+cname(g.drawn)+"</b>. ":"② ")+"Descartá una carta: tocá un jugador de tu cancha o una carta suelta. Si es de acción, se activa"):"⏳ Juega "+esc(nm(g,g.players[g.turn].id))+"… esperá tu turno";
+  html+=`<div class="pan banner ${my&&!g.win?"go":""}">${msg}<div style="font-weight:400;font-size:13px;margin-top:4px">Última jugada: ${esc(last)}</div></div><details><summary>¿Cómo se juega?</summary><div class="mut">Objetivo: completar en tu cancha los 11 jugadores de un mismo equipo. En tu turno robás una carta y descartás otra. Los casilleros con “?” son los jugadores que te faltan. Las cartas de acción se activan al descartarlas y traen su efecto escrito. Una acción ya usada queda bloqueada en el descarte: nadie puede recogerla.</div></details>`;
+  html+=`<div class="row">`+g.players.filter(p=>p.id!==me).map(p=>`<div class="pan ${g.players[g.turn].id===p.id?"me":""}">${esc(p.name)}<br><span class="mut">${g.hands[p.id].length} cartas${g.skips[p.id]?" · 🚩×"+g.skips[p.id]:""}</span></div>`).join("")+`</div>`;
+  html+=`<div class="row"><div><small class="mut">Mazo</small><br><div class="card back ${hint}" id="deck">${g.deck.length}<br>cartas</div></div><div><small class="mut">Descarte${topA?" 🔒":""}</small><br>${g.disc.length?cardHtml(g.disc[g.disc.length-1],-1).replace('class="card"','class="card '+(topA?"locked":hint)+'" id="disc"').replace('class="card act"','class="card act '+(topA?"locked":hint)+'" id="disc"'):""}</div>
+  </div>`;
+  if(pend){const k=ACT[pend.split(":")[1]];html+=`<div class="pan">${k[0]} ¿A quién?<div class="row">`+g.players.filter(p=>p.id!==me).map(p=>`<button data-t="${p.id}">${esc(p.name)}</button>`).join("")+`<button class="sec" id="cancel">Cancelar</button></div></div>`}
+  if(peek&&g.hands[peek])html+=`<div class="pan">🖥️ VAR · mano de ${esc(nm(g,peek))}<div class="hand">${[...g.hands[peek]].sort().map(c=>cardHtml(c,-1)).join("")}</div></div>`;
+  let fly=null;if(g.drawn&&g.drawnBy===me&&g.phase==="discard"&&animKey!==g.dn){animKey=g.dn;fly=g.drawn;if(fly[0]==="T")view=+fly.split(":")[1]}
+  const pt=(view!==null&&cnt[view])?view:(best?+best[0]:0),have=cnt[pt]||0;
+  const chips=Object.keys(cnt).map(t=>`<button class="chip ${+t===pt?"on":""}" data-v="${t}">${crest(TEAMS[t])} ${TEAMS[t][0]} ${cnt[t]}/11</button>`).join("");
+  const loose=h.filter(c=>!c.startsWith("T:"+pt+":"));
+  html+=`<div class="pan ${my?"me":""}"><b>Tu cancha: ${TEAMS[pt][0]} ${have}/11</b><div class="bar"><div style="width:${have/11*100}%"></div></div><div class="mut">${have===11?"¡Cancha completa!":"Te faltan "+(11-have)+" jugadores. Buscá los que aparecen con “?”."}</div><div class="row">${chips}</div>${pitch(h,pt)}</div><div class="pan"><b>Cartas sueltas</b> <span class="mut">(otros equipos y acciones)</span><div class="hand" id="hand">${loose.map(c=>cardHtml(c,c)).join("")}</div></div>`;
+  html+=`<div class="mut">${g.log.map(esc).join("<br>")}</div>`;
+  $("#app").innerHTML=html;if(fly)flyCard(fly,g.src);
+  document.querySelectorAll("#hand .card,.sl.own").forEach(el=>el.onclick=()=>{if(my&&g.phase==="discard"&&!g.win)pick(el.dataset.i||el.dataset.c)});
+  document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{view=+b.dataset.v;render()});
+  if($("#deck"))$("#deck").onclick=()=>{if(my&&g.phase==="draw")draw(false)};
+  if($("#disc"))$("#disc").onclick=()=>{if(my&&g.phase==="draw"&&!topA)draw(true)};
+  document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>discard(pend,b.dataset.t));
+  if($("#cancel"))$("#cancel").onclick=()=>{pend=null;render()};
+  if($("#again"))$("#again").onclick=async()=>{const n=clone(S);start(n);try{await ref.set(n)}catch(e){}};
+}
+(async()=>{
+  try{
+    if(FIREBASE_CONFIG.apiKey==="AIzaSyByKppVKNL8DulWXUcJWMUbw5EV7-Z16vg"){$("#app").innerHTML="Falta configurar Firebase: pegá tu configuración en <code>FIREBASE_CONFIG</code>.";return}
+    firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();
+    const cred=await firebase.auth().signInAnonymously();me=cred.user.uid;lobby();
+  }catch(e){$("#app").textContent="No se pudo conectar con Firebase."}
+})();
+</script></body></html>
